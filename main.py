@@ -1,5 +1,5 @@
 from tkinter import Canvas, Tk
-from FaceDetector import FaceDetector_cv2, FaceDetector_module
+from FaceDetector import FaceDetector_cv2
 from screenshot import screenshot
 import cv2
 
