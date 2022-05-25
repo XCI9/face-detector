@@ -1,8 +1,9 @@
 from tkinter import Canvas, Tk
-from FaceDetector import FaceDetector_cv2
+from FaceDetector import FaceDetector_cv2, FaceDetector_mediapipe
 from screenshot import screenshot
 import cv2
 import threading
+import time
 
 class DragType:
     Edge = True
@@ -24,7 +25,7 @@ class Window(Tk):
 
         self.screen = self.canvasInit()
 
-        self.detect = FaceDetector_cv2().detect
+        self.detect = FaceDetector_mediapipe().detect
 
         #use two faces buffer so that we can add new faces before delete old
         #which solved the screen flickers
@@ -49,8 +50,8 @@ class Window(Tk):
 
         canvas = Canvas(width = width, height = height)
 
-        canvas.create_rectangle(0, 0, width, height, width=3, fill='grey')
-        self.current = canvas.create_rectangle(50, 50, 100, 100, width=5, outline = 'red')
+        canvas.create_rectangle(0, 0, width, height, width=3, fill='gray')
+        self.current = canvas.create_rectangle(10, 10, 110, 1010, width=5, outline = 'red')
         canvas.tag_bind(self.current, '<Button-1>', self.on_click)
         canvas.tag_bind(self.current, '<Button1-Motion>', self.on_motion)
         canvas.tag_bind(self.current, '<Enter>', self.on_enter)
@@ -136,8 +137,12 @@ class Window(Tk):
             img = screenshot(*region)
 
             self.frameBuffer = img
+            
 
     def faceDetect(self):
+        self.totalTime = 0
+        self.totalRound = 0
+        self.time = time.time()
         while not self.endLoop:
             #get area which is selected
             region = self.getCoords()
@@ -147,15 +152,15 @@ class Window(Tk):
             img = self.frameBuffer
 
             #shrink picture to run faster
-            faces = self.detect(cv2.resize(img, (0, 0), fx=0.5, fy=0.5))
-            #faces = self.detect(img)
+            #faces = self.detect(cv2.resize(img, (0, 0), fx=0.5, fy=0.5))
+            faces = self.detect(img)
 
             #draw new faces
             for (left, top, width, height) in faces:
-                left <<= 1
-                top <<= 1
-                width <<= 1
-                height <<= 1
+                #left <<= 1
+                #top <<= 1
+                #width <<= 1
+                #height <<= 1
                 age, gender = self.faceClassify(img[left:left + width, top:top+height])
 
                 if gender == Gender.Male:
@@ -180,6 +185,10 @@ class Window(Tk):
                 self.screen.delete(self.facesInfo[1 - self.displayTag].pop())  
 
             self.displayTag = 1 - self.displayTag
+            self.totalTime += time.time() - self.time
+            self.totalRound += 1
+            print(f"frame took {time.time() - self.time} seconds, current pixels count: {region[2] * region[3]}")
+            self.time = time.time()
 
 
     def faceClassify(self, face):
