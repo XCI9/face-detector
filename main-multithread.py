@@ -25,7 +25,7 @@ class Window(Tk):
 
         self.screen = self.canvasInit()
 
-        self.detect = FaceDetector_mediapipe().detect
+        self.detect = FaceDetector_cv2().detect
 
         #use two faces buffer so that we can add new faces before delete old
         #which solved the screen flickers
@@ -151,16 +151,10 @@ class Window(Tk):
 
             img = self.frameBuffer
 
-            #shrink picture to run faster
-            #faces = self.detect(cv2.resize(img, (0, 0), fx=0.5, fy=0.5))
             faces = self.detect(img)
 
             #draw new faces
             for (left, top, width, height) in faces:
-                #left <<= 1
-                #top <<= 1
-                #width <<= 1
-                #height <<= 1
                 age, gender = self.faceClassify(img[left:left + width, top:top+height])
 
                 if gender == Gender.Male:
