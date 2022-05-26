@@ -36,7 +36,6 @@ class Window(Tk):
         self.endLoop = False
 
         self.bind('<Escape>', self.on_closeWindow)
-        #start face detect loop
         
         #just make self.frameBuffer contain something
         self.frameBuffer = screenshot(0,0,10,10)
@@ -67,7 +66,6 @@ class Window(Tk):
     def on_enter(self, event):
         x1, y1, x2, y2 = self.screen.coords(self.current)
         if abs(event.x - x1) < abs(event.x - x2):
-            # opposing side was grabbed; swap the anchor and mobile side
             nearX, farX = x1, x2
         else:
             nearX, farX = x2, x1
@@ -117,15 +115,15 @@ class Window(Tk):
         return (left, top, width, height)
 
     def multithread(self):
-        self.t1 = threading.Thread(target = self.screenshot)
-        self.t2 = threading.Thread(target = self.faceDetect)
+        t1 = threading.Thread(target = self.screenshot)
+        t2 = threading.Thread(target = self.faceDetect)
 
         #kill threads when main thread died
-        self.t1.daemon = True 
-        self.t2.daemon = True 
+        t1.daemon = True 
+        t2.daemon = True 
 
-        self.t1.start()
-        self.t2.start()
+        t1.start()
+        t2.start()
         
     
     def screenshot(self):
@@ -176,9 +174,12 @@ class Window(Tk):
             while len(self.facesRect[1 - self.displayTag]) > 0:
                 self.screen.delete(self.facesRect[1 - self.displayTag].pop())
             while len(self.facesInfo[1 - self.displayTag]) > 0:
-                self.screen.delete(self.facesInfo[1 - self.displayTag].pop())  
+                self.screen.delete(self.facesInfo[1 - self.displayTag].pop()) 
 
+            #flip tag
             self.displayTag = 1 - self.displayTag
+
+            #for debug
             self.totalTime += time.time() - self.time
             self.totalRound += 1
             print(f"frame took {time.time() - self.time} seconds, current pixels count: {region[2] * region[3]}")
