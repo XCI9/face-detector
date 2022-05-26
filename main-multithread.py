@@ -59,21 +59,26 @@ class Window(Tk):
 
         return canvas
 
-    def on_click(self, event):
-        self.originalCoord = self.screen.coords(self.current)
-        self.originalCursorX, self.originalCursorY = event.x, event.y
-
-    def on_enter(self, event):
+    def getCoordsRelatedToCurrent(self, currentX, currentY):
         x1, y1, x2, y2 = self.screen.coords(self.current)
-        if abs(event.x - x1) < abs(event.x - x2):
+        if abs(currentX - x1) < abs(currentX - x2):
             nearX, farX = x1, x2
         else:
             nearX, farX = x2, x1
 
-        if abs(event.y - y1) < abs(event.y - y2):
+        if abs(currentY - y1) < abs(currentY - y2):
             nearY, farY = y1, y2
         else:
             nearY, farY = y2, y1
+
+        return nearX, nearY, farX, farY
+
+
+    def on_click(self, event):
+        self.originalCoord = self.screen.coords(self.current)
+        self.originalCursorX, self.originalCursorY = event.x, event.y
+
+        nearX, nearY, farX, farY = self.getCoordsRelatedToCurrent(event.x, event.y)
 
         self.start = (farX, farY)
         self.end = (nearX, nearY)
@@ -85,6 +90,17 @@ class Window(Tk):
             self.config(cursor="fleur")
         else:
             self.dragType = DragType.Vertex
+            self.config(cursor="tcross")  
+
+    def on_enter(self, event):
+        nearX, nearY, farX, farY = self.getCoordsRelatedToCurrent(event.x, event.y)
+
+        #change cursor
+        SELECT_REGION_SIZE = 50
+        if (abs(nearX - event.x) < SELECT_REGION_SIZE and abs(nearY - event.y) > SELECT_REGION_SIZE) or \
+           (abs(nearY - event.y) < SELECT_REGION_SIZE and abs(nearX - event.x) > SELECT_REGION_SIZE):
+            self.config(cursor="fleur")
+        else:
             self.config(cursor="tcross")    
 
     def on_motion(self, event):
