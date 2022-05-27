@@ -1,5 +1,5 @@
 import cv2
-import numpy as np
+from numpy import sqrt
 
 class FaceDetector_cv2():
     def __init__(self, scaleFactor=1.1, minNeighbors=10, maxPixels = 150000):
@@ -12,8 +12,9 @@ class FaceDetector_cv2():
     #output a list of face region in the form of (x, y, w, h)
     def detect(self, img):
         height, width, _ = img.shape
-        if height * width > self.maxPixels:
-            scale = np.sqrt(self.maxPixels / height / width)
+        pixelCount = height * width
+        if pixelCount > self.maxPixels:
+            scale = sqrt(self.maxPixels / pixelCount)
             img = cv2.resize(img, (0, 0), fx = scale, fy = scale)
         else:
             scale = 1

@@ -1,7 +1,6 @@
 from tkinter import Canvas, Tk
-from FaceDetector import FaceDetector_cv2, FaceDetector_mediapipe
+from FaceDetector import *
 from screenshot import screenshot
-import cv2
 import threading
 import time
 
