@@ -1,8 +1,24 @@
 from tkinter import Canvas, Tk
 from FaceDetector import *
 from screenshot import screenshot
+from faceClassify import FaceClassify
 import threading
+import argparse
 import time
+
+def getParse():
+    parser = argparse.ArgumentParser()
+
+    #cv2 or mediapipe
+    parser.add_argument("-f", "--faceDetectModule", nargs="+" , default = ["cv2"], help="The module that used to do face detect.")
+
+    parser.add_argument("-p", "--picture", default = None, 
+            help="Pass image path to detect.")
+
+    parser.add_argument("-c", "--faceClassify", nargs="+" , default = None, 
+            help="Parameter for face classify")
+
+    return parser.parse_args()
 
 class DragType:
     Edge = True
@@ -14,7 +30,7 @@ class Gender:
 
 #https://stackoverflow.com/questions/65174044/tkinter-resize-a-rectange-on-canvas-using-mouse
 class Window(Tk):
-    def __init__(self, **args):
+    def __init__(self, parse, detect, classify, **args):
         super().__init__(**args)
         self.lift()
         self.attributes("-fullscreen", True)
@@ -24,7 +40,8 @@ class Window(Tk):
 
         self.screen = self.canvasInit()
 
-        self.detect = FaceDetector_cv2().detect
+        self.detect = detect
+        self.classify = classify
 
         #use two faces buffer so that we can add new faces before delete old
         #which solved the screen flickers
@@ -139,7 +156,7 @@ class Window(Tk):
 
         t1.start()
         t2.start()
-        
+
     
     def screenshot(self):
         while not self.endLoop:
@@ -168,7 +185,7 @@ class Window(Tk):
 
             #draw new faces
             for (left, top, width, height) in faces:
-                age, gender = self.faceClassify(img[left:left + width, top:top+height])
+                age, gender = self.classify(img[left:left + width, top:top+height])
 
                 if gender == Gender.Male:
                     outlineColor = 'blue'
@@ -201,11 +218,45 @@ class Window(Tk):
             self.time = time.time()
 
 
-    def faceClassify(self, face):
-        age = 18
-        gender = Gender.Male
-        return age, gender
-
 if __name__ == "__main__":
-    window = Window()
-    window.mainloop()
+    parse = getParse()
+
+    #cv2 module
+    if parse.faceDetectModule[0] == 'cv2':
+        detect = FaceDetector_cv2().detect
+    elif parse.faceDetectModule[0] == 'mediapipe':
+        detect = FaceDetector_mediapipe().detect
+    else:
+        raise Exception(f"Face detect module: {parse.faceDetectModule[0]} invalid!")
+
+    #faceClassify
+    faceClassify = FaceClassify(parse).classify
+
+    #detect picture
+    if parse.picture != None:
+        img = cv2.imread(parse.picture)
+
+        faces = detect(img)
+
+        for (left, top, width, height) in faces:
+            age, gender = faceClassify(img[left:left + width, top:top+height])
+
+            if gender == Gender.Male:
+                outlineColor = (0,0,255)
+            elif gender == Gender.Female:
+                outlineColor = (255,0,0)
+
+            cv2.rectangle(img, (left, top), (left + width, top + height), outlineColor, 2)
+            cv2.putText(img, f'Age:{age}', 
+                (left, top + 20), 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                0.75,
+                (0,0,255),
+                1,
+                cv2.LINE_AA)
+        cv2.imshow("faceDetect", img)    
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()  
+    else:
+        window = Window(parse, detect, faceClassify)
+        window.mainloop()
